@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shop | Foot-er-path</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="index.html" class="logo">Foot-er-path</a>
+      <nav class="nav-links">
+        <a href="shop.html">Shop</a>
+        <a href="shop.html?category=Running">Running</a>
+        <a href="shop.html?category=Sneakers">Sneakers</a>
+        <a href="shop.html?new=1">New Arrivals</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="cart.html" class="cart-link">Cart <span class="cart-badge">0</span></a>
+        <a href="admin.html" class="btn-admin">Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container section">
+    <h1 class="page-title" id="page-title">All Shoes</h1>
+    <p class="text-sm text-muted" id="count"></p>
+
+    <div class="filter-bar" id="filters"></div>
+
+    <div class="product-grid mt-8" id="products"></div>
+    <div class="empty" id="empty" style="display:none">
+      <p>No products found.</p>
+      <a href="shop.html">View all products</a>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom" style="margin-top:0;border:none">© 2026 Foot-er-path</div>
+    </div>
+  </footer>
+
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const category = params.get("category");
+    const isNew = params.get("new") === "1";
+
+    // Title
+    const title = category || (isNew ? "New Arrivals" : "All Shoes");
+    document.getElementById("page-title").textContent = title;
+    document.title = title + " | Foot-er-path";
+
+    // Filters
+    let filterHtml = `<a href="shop.html" class="chip ${!category && !isNew ? "active" : ""}">All</a>`;
+    CATEGORIES.forEach(c => {
+      filterHtml += `<a href="shop.html?category=${c}" class="chip ${category === c ? "active" : ""}">${c}</a>`;
+    });
+    document.getElementById("filters").innerHTML = filterHtml;
+
+    // Products
+    const list = filterProducts({ category, newArrival: isNew || undefined });
+    document.getElementById("count").textContent = list.length + " products";
+
+    if (list.length === 0) {
+      document.getElementById("empty").style.display = "block";
+    } else {
+      document.getElementById("products").innerHTML = list.map(p => {
+        const price = p.discountPrice != null ? p.discountPrice : p.price;
+        const hasDiscount = p.discountPrice != null && p.discountPrice < p.price;
+        return `
+          <a href="product.html?slug=${p.slug}" class="product-card">
+            <div class="product-img">
+              <img src="${p.images[0]}" alt="${p.name}" loading="lazy" />
+              ${p.newArrival ? '<span class="badge badge-new">New</span>' : ""}
+              ${hasDiscount ? '<span class="badge badge-sale">Sale</span>' : ""}
+            </div>
+            <div class="product-info">
+              <p class="product-brand">${p.brand}</p>
+              <h3 class="product-name">${p.name}</h3>
+              <p class="product-price">
+                ${formatPrice(price)}
+                ${hasDiscount ? `<span class="old">${formatPrice(p.price)}</span>` : ""}
+              </p>
+              <p class="product-rating"><span class="star">★</span> ${p.rating}</p>
+            </div>
+          </a>`;
+      }).join("");
+    }
+  </script>
+</body>
+</html>

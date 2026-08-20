@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Foot-er-path</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="index.html" class="logo">Foot-er-path</a>
+      <div class="nav-actions">
+        <a href="index.html" class="text-sm">← Back to Store</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container section">
+    <div class="flex-between">
+      <h1 class="page-title">Admin Dashboard</h1>
+      <button class="btn btn-dark" onclick="downloadOrdersCSV()" style="padding:0.5rem 1.25rem;font-size:0.8rem">
+        Download Orders (CSV/Excel)
+      </button>
+    </div>
+
+    <div class="admin-stats" id="stats"></div>
+
+    <!-- Orders -->
+    <div class="table-wrap">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid #f5f5f5;font-weight:600">Orders</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Total</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="table-wrap" style="margin-top:2rem">
+      <div style="padding:1rem 1.25rem;border-bottom:1px solid #f5f5f5;font-weight:600">Products (from products.js)</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>SKU</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>Category</th>
+            </tr>
+          </thead>
+          <tbody id="products-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="text-sm text-muted mt-6">
+      অর্ডারগুলো browser-এর localStorage-এ সেভ হয়। CSV ডাউনলোড করে Excel-এ খুলতে পারবেন।
+      নতুন প্রোডাক্ট যোগ করতে <code>js/products.js</code> ফাইল এডিট করুন।
+    </p>
+  </div>
+
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    function render() {
+      const orders = getOrders();
+      const totalSales = orders
+        .filter(o => o.orderStatus !== "CANCELLED")
+        .reduce((s, o) => s + (o.total || 0), 0);
+      const pending = orders.filter(o => o.orderStatus === "PENDING").length;
+
+      document.getElementById("stats").innerHTML = `
+        <div class="stat-card"><p>Total Sales</p><h3>$${totalSales.toFixed(0)}</h3></div>
+        <div class="stat-card"><p>Total Orders</p><h3>${orders.length}</h3></div>
+        <div class="stat-card"><p>Pending</p><h3>${pending}</h3></div>
+        <div class="stat-card"><p>Products</p><h3>${PRODUCTS.length}</h3></div>
+      `;
+
+      const statuses = ["PENDING","CONFIRMED","PROCESSING","PACKED","SHIPPED","DELIVERED","CANCELLED"];
+
+      document.getElementById("orders-body").innerHTML = orders.length === 0
+        ? `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#a3a3a3">No orders yet</td></tr>`
+        : orders.map(o => `
+          <tr>
+            <td style="font-weight:600">${o.orderNumber}</td>
+            <td>${o.customerName}<br><small class="text-muted">${o.address || ""}</small></td>
+            <td>${o.phone}</td>
+            <td style="font-weight:600">${formatPrice(o.total)}</td>
+            <td>${o.paymentMethod}<br><small class="text-muted">${o.paymentStatus}</small></td>
+            <td>
+              <select class="status-select" onchange="changeStatus('${o.id}', this.value)">
+                ${statuses.map(s => `<option value="${s}" ${o.orderStatus === s ? "selected" : ""}>${s}</option>`).join("")}
+              </select>
+            </td>
+            <td class="text-muted">${new Date(o.createdAt).toLocaleDateString()}</td>
+          </tr>
+        `).join("");
+
+      document.getElementById("products-body").innerHTML = PRODUCTS.map(p => `
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <img src="${p.images[0]}" alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover" />
+              <span style="font-weight:500">${p.name}</span>
+            </div>
+          </td>
+          <td class="text-muted">${p.sku}</td>
+          <td>${formatPrice(p.discountPrice != null ? p.discountPrice : p.price)}</td>
+          <td>${p.stock}</td>
+          <td>${p.category}</td>
+        </tr>
+      `).join("");
+    }
+
+    window.changeStatus = function(id, status) {
+      updateOrderStatus(id, status);
+      render();
+    };
+
+    render();
+  </script>
+</body>
+</html>

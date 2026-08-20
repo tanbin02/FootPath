@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Foot-er-path | Premium Footwear</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="index.html" class="logo">Foot-er-path</a>
+      <nav class="nav-links">
+        <a href="shop.html">Shop</a>
+        <a href="shop.html?category=Running">Running</a>
+        <a href="shop.html?category=Sneakers">Sneakers</a>
+        <a href="shop.html?new=1">New Arrivals</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="cart.html" class="cart-link">
+          Cart <span class="cart-badge">0</span>
+        </a>
+        <a href="admin.html" class="btn-admin">Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg" style="background-image:url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1600')"></div>
+    <div class="container">
+      <div class="hero-content">
+        <p class="hero-label">New Season Collection</p>
+        <h1>STEP INTO<br>YOUR STYLE</h1>
+        <p>Premium footwear engineered for movement, designed for life. Discover the perfect pair for every path you take.</p>
+        <div class="hero-btns">
+          <a href="shop.html" class="btn btn-white">Shop Now</a>
+          <a href="shop.html?new=1" class="btn btn-outline">Explore Collection</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Categories -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Shop by Category</h2>
+      <div class="cat-grid mt-8" id="categories"></div>
+    </div>
+  </section>
+
+  <!-- Featured -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Featured</h2>
+        <a href="shop.html">View all</a>
+      </div>
+      <div class="product-grid" id="featured"></div>
+    </div>
+  </section>
+
+  <!-- New Arrivals -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">New Arrivals</h2>
+        <a href="shop.html?new=1">View all</a>
+      </div>
+      <div class="product-grid" id="new-arrivals"></div>
+    </div>
+  </section>
+
+  <!-- Best Sellers -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Best Sellers</h2>
+        <a href="shop.html">View all</a>
+      </div>
+      <div class="product-grid" id="bestsellers"></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container features-grid">
+      <div><h3>Premium Quality</h3><p>Crafted with care</p></div>
+      <div><h3>Fast Delivery</h3><p>2-5 business days</p></div>
+      <div><h3>Easy Returns</h3><p>30-day policy</p></div>
+      <div><h3>Secure Payment</h3><p>Encrypted checkout</p></div>
+      <div><h3>Authentic</h3><p>100% genuine</p></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="container">
+      <h2>NEW SEASON. NEW MOVEMENT.</h2>
+      <p>Discover the latest drops and exclusive styles designed for the way you move.</p>
+      <a href="shop.html" class="btn btn-primary mt-8">Shop the Collection</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-logo">Foot-er-path</div>
+          <p class="mt-4 text-sm">Premium footwear for every path you choose.</p>
+        </div>
+        <div>
+          <h4>Shop</h4>
+          <ul>
+            <li><a href="shop.html">All Products</a></li>
+            <li><a href="shop.html?new=1">New Arrivals</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Help</h4>
+          <ul>
+            <li>Shipping</li>
+            <li>Returns</li>
+            <li>Size Guide</li>
+            <li>Contact</li>
+          </ul>
+        </div>
+        <div>
+          <h4>Newsletter</h4>
+          <p class="text-sm">Stay updated on new drops.</p>
+        </div>
+      </div>
+      <div class="footer-bottom">© 2026 Foot-er-path. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    function productCard(p) {
+      const price = p.discountPrice != null ? p.discountPrice : p.price;
+      const hasDiscount = p.discountPrice != null && p.discountPrice < p.price;
+      return `
+        <a href="product.html?slug=${p.slug}" class="product-card">
+          <div class="product-img">
+            <img src="${p.images[0]}" alt="${p.name}" loading="lazy" />
+            ${p.newArrival ? '<span class="badge badge-new">New</span>' : ''}
+            ${hasDiscount ? '<span class="badge badge-sale">Sale</span>' : ''}
+          </div>
+          <div class="product-info">
+            <p class="product-brand">${p.brand}</p>
+            <h3 class="product-name">${p.name}</h3>
+            <p class="product-price">
+              ${formatPrice(price)}
+              ${hasDiscount ? `<span class="old">${formatPrice(p.price)}</span>` : ''}
+            </p>
+            <p class="product-rating"><span class="star">★</span> ${p.rating} (${p.reviewCount})</p>
+          </div>
+        </a>`;
+    }
+
+    // Categories
+    document.getElementById("categories").innerHTML = CATEGORIES.map(c => `
+      <a href="shop.html?category=${c}" class="cat-card">
+        <div class="cat-icon">👟</div>
+        <span>${c}</span>
+      </a>
+    `).join("");
+
+    // Product sections
+    document.getElementById("featured").innerHTML =
+      filterProducts({ featured: true }).slice(0, 4).map(productCard).join("");
+    document.getElementById("new-arrivals").innerHTML =
+      filterProducts({ newArrival: true }).slice(0, 4).map(productCard).join("");
+    document.getElementById("bestsellers").innerHTML =
+      filterProducts({ bestseller: true }).slice(0, 4).map(productCard).join("");
+  </script>
+</body>
+</html>

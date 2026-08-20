@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Product | Foot-er-path</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="index.html" class="logo">Foot-er-path</a>
+      <nav class="nav-links">
+        <a href="shop.html">Shop</a>
+        <a href="shop.html?category=Running">Running</a>
+        <a href="shop.html?category=Sneakers">Sneakers</a>
+        <a href="shop.html?new=1">New Arrivals</a>
+      </nav>
+      <div class="nav-actions">
+        <a href="cart.html" class="cart-link">Cart <span class="cart-badge">0</span></a>
+        <a href="admin.html" class="btn-admin">Admin</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container section" id="content">
+    <p class="text-muted">Loading...</p>
+  </div>
+
+  <script src="js/products.js"></script>
+  <script src="js/cart.js"></script>
+  <script>
+    const slug = new URLSearchParams(location.search).get("slug");
+    const product = getProductBySlug(slug);
+
+    if (!product) {
+      document.getElementById("content").innerHTML = `
+        <div class="empty">
+          <p>Product not found.</p>
+          <a href="shop.html">Back to Shop</a>
+        </div>`;
+    } else {
+      document.title = product.name + " | Foot-er-path";
+      let selectedSize = product.sizes[0];
+      let selectedColor = product.colors[0];
+      let mainImg = product.images[0];
+      let qty = 1;
+
+      function render() {
+        const price = product.discountPrice != null ? product.discountPrice : product.price;
+        const hasDiscount = product.discountPrice != null && product.discountPrice < product.price;
+
+        document.getElementById("content").innerHTML = `
+          <a href="shop.html" class="back-link">← Back to Shop</a>
+          <div class="detail-grid">
+            <div>
+              <div class="detail-main-img">
+                <img src="${mainImg}" alt="${product.name}" id="main-img" />
+              </div>
+              ${product.images.length > 1 ? `
+                <div class="thumbs">
+                  ${product.images.map(img => `
+                    <div class="thumb ${img === mainImg ? "active" : ""}" onclick="changeImg('${img}')">
+                      <img src="${img}" alt="" />
+                    </div>
+                  `).join("")}
+                </div>
+              ` : ""}
+            </div>
+            <div>
+              <p class="detail-brand">${product.brand}</p>
+              <h1 class="detail-title">${product.name}</h1>
+              <p class="detail-price">
+                ${formatPrice(price)}
+                ${hasDiscount ? `<span class="old">${formatPrice(product.price)}</span>` : ""}
+              </p>
+              <p class="product-rating mt-2"><span class="star">★</span> ${product.rating} (${product.reviewCount} reviews)</p>
+              <p class="detail-desc">${product.description}</p>
+
+              <p class="option-label">Color: <span id="color-label">${selectedColor}</span></p>
+              <div class="options">
+                ${product.colors.map(c => `
+                  <button class="opt-btn ${c === selectedColor ? "active" : ""}" onclick="selectColor('${c}')">${c}</button>
+                `).join("")}
+              </div>
+
+              <p class="option-label">Size</p>
+              <div class="options">
+                ${product.sizes.map(s => `
+                  <button class="size-btn ${s === selectedSize ? "active" : ""}" onclick="selectSize('${s}')">${s}</button>
+                `).join("")}
+              </div>
+
+              <p class="option-label">Quantity</p>
+              <div class="qty-row">
+                <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                <span id="qty-val">${qty}</span>
+                <button class="qty-btn" onclick="changeQty(1)">+</button>
+                <span class="text-sm text-muted">${product.stock} in stock</span>
+              </div>
+
+              <div class="detail-actions">
+                <button class="btn btn-dark" onclick="addCart()" id="add-btn">Add to Cart</button>
+                <button class="btn btn-primary" onclick="buyNow()">Buy Now</button>
+              </div>
+
+              ${product.material ? `<p class="text-sm text-muted mt-6"><strong>Material:</strong> ${product.material}</p>` : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      window.changeImg = function(img) {
+        mainImg = img;
+        render();
+      };
+      window.selectColor = function(c) {
+        selectedColor = c;
+        render();
+      };
+      window.selectSize = function(s) {
+        selectedSize = s;
+        render();
+      };
+      window.changeQty = function(d) {
+        qty = Math.max(1, Math.min(product.stock, qty + d));
+        render();
+      };
+      window.addCart = function() {
+        addToCart({
+          productId: product.id,
+          name: product.name,
+          slug: product.slug,
+          image: product.images[0],
+          price: product.price,
+          discountPrice: product.discountPrice,
+          size: selectedSize,
+          color: selectedColor,
+          quantity: qty,
+          stock: product.stock
+        });
+        const btn = document.getElementById("add-btn");
+        btn.textContent = "✓ Added to Cart";
+        setTimeout(() => { btn.textContent = "Add to Cart"; }, 1500);
+      };
+      window.buyNow = function() {
+        addCart();
+        location.href = "checkout.html";
+      };
+
+      render();
+    }
+  </script>
+</body>
+</html>
