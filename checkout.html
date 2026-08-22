@@ -53,7 +53,7 @@
                 </div>
                 <div>
                   <label>Phone *</label>
-                  <input required name="phone" />
+                  <input required name="phone" type="tel" />
                 </div>
                 <div>
                   <label>Email</label>
@@ -88,10 +88,18 @@
 
             <div class="form-card">
               <h2>Payment Method</h2>
-              <label class="radio-row"><input type="radio" name="paymentMethod" value="COD" checked /> Cash on Delivery</label>
-              <label class="radio-row"><input type="radio" name="paymentMethod" value="bKash" /> bKash</label>
-              <label class="radio-row"><input type="radio" name="paymentMethod" value="Nagad" /> Nagad</label>
-              <label class="radio-row"><input type="radio" name="paymentMethod" value="Card" /> Card</label>
+              <label class="radio-row">
+                <input type="radio" name="paymentMethod" value="COD" checked /> Cash on Delivery
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="paymentMethod" value="bKash" /> bKash
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="paymentMethod" value="Nagad" /> Nagad
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="paymentMethod" value="Card" /> Card
+              </label>
             </div>
           </div>
 
@@ -99,22 +107,45 @@
             <h2 style="font-weight:600;margin-bottom:1rem">Order Summary</h2>
             ${items.map(i => {
               const price = i.discountPrice != null ? i.discountPrice : i.price;
-              return `<div class="summary-row">
-                <span class="text-muted">${i.name} × ${i.quantity}<br><small>${i.color} / ${i.size}</small></span>
-                <span class="font-bold">${formatPrice(price * i.quantity)}</span>
-              </div>`;
+              return `
+                <div class="summary-row">
+                  <span class="text-muted">
+                    ${i.name} × ${i.quantity}<br>
+                    <small>${i.color} / ${i.size}</small>
+                  </span>
+                  <span class="font-bold">${formatPrice(price * i.quantity)}</span>
+                </div>`;
             }).join("")}
-            <div class="summary-row mt-4"><span class="text-muted">Subtotal</span><span>${formatPrice(subtotal)}</span></div>
-            <div class="summary-row"><span class="text-muted">Delivery</span><span>${delivery === 0 ? "Free" : formatPrice(delivery)}</span></div>
-            <div class="summary-row total"><span>Total</span><span>${formatPrice(total)}</span></div>
-            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1.5rem">Place Order</button>
+
+            <div class="summary-row mt-4">
+              <span class="text-muted">Subtotal</span>
+              <span>${formatPrice(subtotal)}</span>
+            </div>
+            <div class="summary-row">
+              <span class="text-muted">Delivery</span>
+              <span>${delivery === 0 ? "Free" : formatPrice(delivery)}</span>
+            </div>
+            <div class="summary-row total">
+              <span>Total</span>
+              <span>${formatPrice(total)}</span>
+            </div>
+
+            <button type="submit" id="place-order-btn" class="btn btn-primary" style="width:100%;margin-top:1.5rem">
+              Place Order
+            </button>
           </div>
         </form>
       `;
 
-      document.getElementById("order-form").addEventListener("submit", function(e) {
+      document.getElementById("order-form").addEventListener("submit", async function (e) {
         e.preventDefault();
+
+        const btn = document.getElementById("place-order-btn");
+        btn.disabled = true;
+        btn.textContent = "Placing Order...";
+
         const fd = new FormData(this);
+
         const orderItems = items.map(i => ({
           productId: i.productId,
           productName: i.name,
@@ -125,37 +156,44 @@
           totalPrice: (i.discountPrice != null ? i.discountPrice : i.price) * i.quantity
         }));
 
-        const order = saveOrder({
-          customerName: fd.get("customerName"),
-          phone: fd.get("phone"),
-          email: fd.get("email") || "",
-          address: fd.get("address"),
-          division: fd.get("division") || "",
-          district: fd.get("district") || "",
-          area: fd.get("area") || "",
-          postalCode: fd.get("postalCode") || "",
-          notes: fd.get("notes") || "",
-          items: orderItems,
-          subtotal,
-          discount: 0,
-          deliveryCharge: delivery,
-          total,
-          paymentMethod: fd.get("paymentMethod"),
-          paymentStatus: "PENDING",
-          orderStatus: "PENDING"
-        });
+        try {
+          const order = await saveOrder({
+            customerName: fd.get("customerName"),
+            phone: fd.get("phone"),
+            email: fd.get("email") || "",
+            address: fd.get("address"),
+            division: fd.get("division") || "",
+            district: fd.get("district") || "",
+            area: fd.get("area") || "",
+            postalCode: fd.get("postalCode") || "",
+            notes: fd.get("notes") || "",
+            items: orderItems,
+            subtotal,
+            discount: 0,
+            deliveryCharge: delivery,
+            total,
+            paymentMethod: fd.get("paymentMethod"),
+            paymentStatus: "PENDING",
+            orderStatus: "PENDING"
+          });
 
-        clearCart();
+          clearCart();
 
-        document.getElementById("checkout-content").innerHTML = `
-          <div class="success-box">
-            <div class="check">✓</div>
-            <h1 class="page-title mt-4">Order Placed!</h1>
-            <p class="mt-2">Your order number is <strong>${order.orderNumber}</strong></p>
-            <p class="text-sm text-muted mt-2">We will contact you soon for confirmation.</p>
-            <p class="text-sm text-muted mt-1">Order also saved. Admin can see it & download as Excel/CSV.</p>
-            <a href="shop.html" class="btn btn-dark mt-8">Continue Shopping</a>
-          </div>`;
+          document.getElementById("checkout-content").innerHTML = `
+            <div class="success-box">
+              <div class="check">✓</div>
+              <h1 class="page-title mt-4">Order Placed!</h1>
+              <p class="mt-2">Your order number is <strong>${order.orderNumber}</strong></p>
+              <p class="text-sm text-muted mt-2">We will contact you soon for confirmation.</p>
+              <p class="text-sm text-muted mt-1">Order has been saved. Admin can see it & download as Excel/CSV.</p>
+              <a href="shop.html" class="btn btn-dark mt-8">Continue Shopping</a>
+            </div>`;
+        } catch (err) {
+          console.error(err);
+          alert("Something went wrong while placing the order. Please try again.");
+          btn.disabled = false;
+          btn.textContent = "Place Order";
+        }
       });
     }
   </script>
