@@ -3,7 +3,7 @@ const CART_KEY = "footerpath_cart";
 const ORDERS_KEY = "footerpath_orders"; // backup only
 
 // =============== GOOGLE SHEETS ===============
-const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxZg_Fy6GoV0fdmHByORz_KOPpoxeJINuFL-HrKbR0EidcsB-7boNNSqCldT1gKxJ_O/exec";
+const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzotssVy-lskhiS0_LVaaDQciqKg3Xdw0pUADeq_55Ta6Ue7ahlIAItOzP8VOfrLRAR/exec";
 
 async function saveOrderToSheet(order) {
   try {
