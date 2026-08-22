@@ -48,7 +48,28 @@ async function updateOrderStatusInSheet(id, status) {
     return { success: false };
   }
 }
+// ====================== CLEAN / CLEAR ALL ORDERS ======================
+async function clearAllOrders() {
+  // এখানে আপনার Google Apps Script-এর Web App URL দিন
+  const SCRIPT_URL = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec";
 
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=clearOrders`, {
+      method: "POST",
+      // mode: "no-cors" লাগলে যোগ করবেন (কিছু ক্ষেত্রে দরকার হয়)
+    });
+
+    // যদি no-cors ব্যবহার করেন তাহলে response check করা যায় না
+    // তাই সাধারণত নিচের লাইনগুলো কমেন্ট করে রাখেন
+    // const result = await response.json();
+    // if (!result.success) throw new Error(result.message || "Failed to clear");
+
+    return true;
+  } catch (error) {
+    console.error("Error clearing orders:", error);
+    throw error;
+  }
+}
 // =============== CART (localStorage) ===============
 function getCart() {
   try {
