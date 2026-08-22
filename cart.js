@@ -1,7 +1,55 @@
 // Cart System using localStorage
 const CART_KEY = "footerpath_cart";
-const ORDERS_KEY = "footerpath_orders";
+const ORDERS_KEY = "footerpath_orders"; // backup only
 
+// =============== GOOGLE SHEETS ===============
+const SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzWKUYGw7XMaaP6o4wG0k4nxoJL1_F460nXr9HNAY4mU86RxPOxje9oDT7qns75aNn3/exec";
+
+async function saveOrderToSheet(order) {
+  try {
+    const res = await fetch(SHEETS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "addOrder",
+        order: order
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Sheet save error:", err);
+    return { success: false, error: err.message };
+  }
+}
+
+async function getOrdersFromSheet() {
+  try {
+    const res = await fetch(SHEETS_API_URL + "?action=getOrders");
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (err) {
+    console.error("Sheet load error:", err);
+    return [];
+  }
+}
+
+async function updateOrderStatusInSheet(id, status) {
+  try {
+    const res = await fetch(SHEETS_API_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        action: "updateStatus",
+        id: id,
+        status: status
+      })
+    });
+    return await res.json();
+  } catch (err) {
+    console.error("Status update error:", err);
+    return { success: false };
+  }
+}
+
+// =============== CART (localStorage) ===============
 function getCart() {
   try {
     return JSON.parse(localStorage.getItem(CART_KEY)) || [];
@@ -19,7 +67,6 @@ function addToCart(item) {
   const cart = getCart();
   const id = item.productId + "-" + item.size + "-" + item.color;
   const existing = cart.find(i => i.id === id);
-
   if (existing) {
     existing.quantity = Math.min(existing.quantity + (item.quantity || 1), item.stock || 99);
   } else {
@@ -82,8 +129,13 @@ function updateCartBadge() {
   });
 }
 
-// Orders
-function getOrders() {
+// =============== ORDERS (Google Sheets primary) ===============
+async function getOrders() {
+  // Primary: Google Sheet
+  const sheetOrders = await getOrdersFromSheet();
+  if (sheetOrders.length > 0) return sheetOrders;
+  
+  // Fallback: localStorage (old orders)
   try {
     return JSON.parse(localStorage.getItem(ORDERS_KEY)) || [];
   } catch {
@@ -91,8 +143,7 @@ function getOrders() {
   }
 }
 
-function saveOrder(order) {
-  const orders = getOrders();
+async function saveOrder(order) {
   const now = new Date();
   const orderNumber =
     "FEP" +
@@ -102,38 +153,58 @@ function saveOrder(order) {
     String(Math.floor(Math.random() * 10000)).padStart(4, "0");
 
   const fullOrder = {
-    id: Date.now().toString(),
+    id: Date.now().toString() + Math.floor(Math.random() * 1000),
     orderNumber,
+    paymentStatus: "PENDING",
+    orderStatus: "PENDING",
     ...order,
     createdAt: now.toISOString()
   };
-  orders.unshift(fullOrder);
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  return fullOrder;
-}
 
-function updateOrderStatus(id, status) {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.orderStatus = status;
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  // Save to Google Sheet
+  const result = await saveOrderToSheet(fullOrder);
+
+  // Also keep a local backup (optional)
+  try {
+    const localOrders = JSON.parse(localStorage.getItem(ORDERS_KEY)) || [];
+    localOrders.unshift(fullOrder);
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(localOrders));
+  } catch (e) {}
+
+  if (result && result.success) {
+    return fullOrder;
+  } else {
+    console.warn("Sheet save failed, but order saved locally");
+    return fullOrder; // still return so UI can continue
   }
 }
 
-// Download orders as CSV (Excel can open it)
-function downloadOrdersCSV() {
-  const orders = getOrders();
+async function updateOrderStatus(id, status) {
+  await updateOrderStatusInSheet(id, status);
+
+  // Also update local backup if exists
+  try {
+    const orders = JSON.parse(localStorage.getItem(ORDERS_KEY)) || [];
+    const order = orders.find(o => o.id === id);
+    if (order) {
+      order.orderStatus = status;
+      localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+    }
+  } catch (e) {}
+}
+
+// Download orders as CSV
+async function downloadOrdersCSV() {
+  const orders = await getOrders();
   if (orders.length === 0) {
     alert("No orders yet");
     return;
   }
 
   let csv = "Order Number,Date,Customer,Phone,Email,Address,District,Items,Subtotal,Delivery,Total,Payment,Status\n";
-
   orders.forEach(o => {
     const items = (o.items || [])
-      .map(i => i.productName + " (" + i.size + "/" + i.color + " x" + i.quantity + ")")
+      .map(i => (i.productName || i.name || "") + " (" + (i.size || "") + "/" + (i.color || "") + " x" + (i.quantity || 1) + ")")
       .join("; ");
     csv += [
       o.orderNumber,
@@ -144,11 +215,11 @@ function downloadOrdersCSV() {
       '"' + (o.address || "") + '"',
       o.district || "",
       '"' + items + '"',
-      o.subtotal,
-      o.deliveryCharge,
-      o.total,
-      o.paymentMethod,
-      o.orderStatus
+      o.subtotal || 0,
+      o.deliveryCharge || 0,
+      o.total || 0,
+      o.paymentMethod || "",
+      o.orderStatus || ""
     ].join(",") + "\n";
   });
 
@@ -159,5 +230,5 @@ function downloadOrdersCSV() {
   link.click();
 }
 
-// Init badge on page load
+// Init badge
 document.addEventListener("DOMContentLoaded", updateCartBadge);
